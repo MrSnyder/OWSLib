@@ -12,15 +12,13 @@ ATOM XML Encoding: http://www.opengeospatial.org/standards/owc
 OGC OWS Context Atom Encoding Standard 1.0 (12-084r2)
 """
 
-from owslib.etree import etree, ParseError
 from owslib import util
+from owslib.etree import etree, ParseError
 from owslib.namespaces import Namespaces
-from owslib.util import nspath_eval, element_to_string
-
-from owslib.util import log
-
 from owslib.owscontext.common import is_empty, extract_p, \
-    try_int, try_float
+    try_int, try_float, ATOM_OWCSPEC_URL, genericspecurl_to_encodedspecurl
+from owslib.util import log
+from owslib.util import nspath_eval, element_to_string
 
 # default variables
 add_namespaces = {"georss": "http://www.georss.org/georss",
@@ -620,7 +618,7 @@ def axml_context(d):
 
     update_date = extract_p('properties.updated', d, None)
     if update_date is not None:
-        etree.SubElement(xml, "updated").text = update_date
+        etree.SubElement(xml, "updated").text = axml_date(update_date)
 
     authors = [axml_author(do) for do in extract_p('properties.authors', d, [])]
     [xml.append(el) for el in authors if el is not None]
@@ -688,18 +686,18 @@ def axml_resource(d):
 
     update_date = extract_p('properties.updated', d, None)
     if update_date is not None:
-        etree.SubElement(entry, "updated").text = update_date
+        etree.SubElement(entry, "updated").text = axml_date(update_date)
 
     authors = [axml_author(do) for do in
                extract_p('properties.authors', d, [])]
     [entry.append(el) for el in authors if el is not None]
 
     publisher = extract_p('properties.publisher', d, None)
-    if update_date is not None:
+    if publisher is not None:
         etree.SubElement(entry, ns_elem("dc", "publisher")).text = publisher
 
     rights = extract_p('properties.rights', d, None)
-    if update_date is not None:
+    if rights is not None:
         etree.SubElement(entry, ns_elem("dc", "rights")).text = rights
 
     temporal_extent = extract_p('properties.date', d, None)
@@ -730,10 +728,12 @@ def axml_resource(d):
                  extract_p('properties.offerings', d, [])]
     [entry.append(el) for el in offerings if el is not None]
 
-    # TODO no examples for active attribute
+    # <category scheme="http://www.opengis.net/spec/owc/active" term="true" />
     active = extract_p('properties.active', d, None)
-    if active is not None:
-        etree.SubElement(entry, "active").text = active
+    if not active:
+        attrib = {"scheme": "http://www.opengis.net/spec/owc/active", "term": "false"}
+        category_active = etree.SubElement(entry, "category", attrib=attrib)
+
 
     min_scale_denominator = try_float(extract_p(
         'properties.minscaledenominator', d, None))
@@ -814,11 +814,13 @@ def axml_link(d):
         try:
             link = etree.Element("link", nsmap=ns)
             href = extract_p('href', d, None)
-            if href is not None:
-                link.set("href", href)
             rel = extract_p('rel', d, None)
             if rel is not None:
                 link.set("rel", rel)
+            if rel == "profile" and href is not None:
+                href = genericspecurl_to_encodedspecurl(href, ATOM_OWCSPEC_URL)
+            if href is not None:
+                link.set("href", href)
             mimetype = extract_p('type', d, None)
             if mimetype is not None:
                 link.set("type", mimetype)
@@ -892,6 +894,8 @@ def axml_offering(d):
     else:
         try:
             offering_code = extract_p('code', d, None)
+            if offering_code:
+                offering_code = genericspecurl_to_encodedspecurl(offering_code, ATOM_OWCSPEC_URL)
             offering = etree.Element(ns_elem("owc", "offering"), attrib={"code": offering_code}, nsmap=ns)
 
             # use axml_operation here
@@ -1022,3 +1026,7 @@ def axml_content(d):
         except Exception as ex:
             log.warn('could encode content', ex)
             return None
+
+def axml_date(dt):
+    # TODO is this always a datetime?
+    return dt.isoformat("T", "seconds")

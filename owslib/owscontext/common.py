@@ -57,14 +57,14 @@ ATOM_OFFERING_CODES = [
 
 def encodedspecurl_to_genericspecurl(encodedspecurl, genericspecurl):
     parsed = urlparse(encodedspecurl)
-    speccode = "/" + parsed.path.split("/").last.trim
-    return genericspecurl + speccode
+    speccode = "/" + parsed.path.split("/")[-1].rstrip()
+    return genericspecurl + "/" + speccode
 
 
 def genericspecurl_to_encodedspecurl(genericspecurl, encodedspecurl):
     parsed = urlparse(genericspecurl)
-    speccode = parsed.path.split("/").last.trim
-    return encodedspecurl + speccode
+    speccode = parsed.path.split("/")[-1].rstrip()
+    return encodedspecurl + "/" + speccode
 
 
 class TimeIntervalFormat(object):
@@ -129,7 +129,7 @@ def skip_nulls(dict_obj):
 
 def skip_nulls_rec(dict_obj):
     """
-    removes dict key/val pairs recursively where value is None,
+    removes dict key/val pairs recursively where value is None or empty list
     not needed/wanted(?) in the JSON
     :param o: needs to be dict
     :return: the trimed dict, or exceptionally the value if it wasn't a dict
@@ -139,7 +139,7 @@ def skip_nulls_rec(dict_obj):
     else:
         result = {}
         for k, v in list(dict_obj.items()):
-            if v is None:
+            if v is None or (isinstance(v, list) and not v):
                 pass
             else:
                 if isinstance(v, dict):
@@ -151,7 +151,6 @@ def skip_nulls_rec(dict_obj):
                 else:
                     result.update({k: v})
         return result
-
 
 def extract_p(path, dict_obj, default):
     """
@@ -197,10 +196,10 @@ def build_from_xp(path, dict_obj, build_class, default):
 
 def is_empty(dict_obj):
     """
-    query if a dict is empty
+    query if a dict is empty (or None)
 
     :param dict_obj: the to be tested dictionary
-    :return: True, if it is empty, False if not empty
+    :return: True, if it is empty (or None), False if not empty
     """
     if isinstance(dict_obj, dict):
         if len(list(dict_obj.items())) <= 0:
@@ -214,7 +213,7 @@ def is_empty(dict_obj):
                     switch = False
             return switch
     else:
-        return False
+        return dict_obj is None
 
 
 def try_int(num_string):

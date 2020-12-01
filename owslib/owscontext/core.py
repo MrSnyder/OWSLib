@@ -47,18 +47,18 @@ class OwcContext(object):
                  update_date,
                  title,
                  language="en",
-                 spec_reference=[],
-                 area_of_interest=[],
-                 context_metadata=[],
+                 spec_reference=None,
+                 area_of_interest=None,
+                 context_metadata=None,
                  subtitle=None,
-                 authors=[],
+                 authors=None,
                  publisher=None,
                  creator_application=None,
                  creator_display=None,
                  rights=None,
                  time_interval_of_interest=None,
-                 keywords=[],
-                 resources=[]
+                 keywords=None,
+                 resources=None
                  ):
         """
         constructor:
@@ -67,7 +67,6 @@ class OwcContext(object):
         :param update_date: datetime
         :param title:   String,
         :param language: String = "en"
-        :param spec_reference: OwcLink[]  links.profiles[] and rel=profile
         :param area_of_interest: Option[Rectangle] = None, aka Double[]
         :param context_metadata: OwcLink[] links.via[] and rel=via
         :param subtitle: Option[String] = None,
@@ -81,26 +80,26 @@ class OwcContext(object):
         :param resources: OwcResource[]
         """
         self.id = id
-        self.spec_reference = spec_reference
-        self.area_of_interest = area_of_interest
-        self.context_metadata = context_metadata
+        self.spec_reference = spec_reference or []
+        self.area_of_interest = area_of_interest or []
+        self.context_metadata = context_metadata or []
         self.language = language
         self.title = title
         self.subtitle = subtitle
         self.update_date = update_date
-        self.authors = authors
+        self.authors = authors or []
         self.publisher = publisher
         self.creator_application = creator_application
         self.creator_display = creator_display
         self.rights = rights
         self.time_interval_of_interest = time_interval_of_interest
-        self.keywords = keywords
-        self.resources = resources
+        self.keywords = keywords or []
+        self.resources = resources or []
 
         # TODO spec reference, check or provide?
         if len(self.spec_reference) <= 0:
             self.spec_reference.append(
-                OwcLink(href=GENERIC_OWCSPEC_URL, rel='profile'))
+                OwcLink(href=GENERIC_OWCSPEC_URL + "/core", rel='profile'))
 
         # TODO check and validate? how much?
 
@@ -242,18 +241,18 @@ class OwcResource(object):
                  title,
                  update_date,
                  subtitle=None,
-                 authors=[],
+                 authors=None,
                  publisher=None,
                  rights=None,
                  geospatial_extent=None,
                  temporal_extent=None,
-                 content_description=[],
-                 preview=[],
-                 content_by_ref=[],
-                 offerings=[],
-                 active=False,
-                 resource_metadata=[],
-                 keywords=[],
+                 content_description=None,
+                 preview=None,
+                 content_by_ref=None,
+                 offerings=None,
+                 active=True,
+                 resource_metadata=None,
+                 keywords=None,
                  min_scale_denominator=None,
                  max_scale_denominator=None,
                  folder=None
@@ -282,6 +281,20 @@ class OwcResource(object):
         :param folder: String
         """
         # # TimeIntervalFormat(start,end)
+        if authors is None:
+            authors = []
+        if content_description is None:
+            content_description = []
+        if preview is None:
+            preview = []
+        if content_by_ref is None:
+            content_by_ref = []
+        if offerings is None:
+            offerings = []
+        if resource_metadata is None:
+            resource_metadata = []
+        if keywords is None:
+            keywords = []
         self.id = id
         self.title = title
         self.subtitle = subtitle

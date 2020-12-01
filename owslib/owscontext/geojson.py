@@ -14,7 +14,8 @@ OGC OWS Context GeoJSON Encoding Standard 1.0 (14-055r2)
 
 import json
 from datetime import datetime
-from owslib.owscontext.common import skip_nulls, skip_nulls_rec
+from owslib.owscontext.common import skip_nulls, skip_nulls_rec, GEOJSON_OWCSPEC_URL, \
+    genericspecurl_to_encodedspecurl
 
 
 # from owslib.util import log
@@ -28,7 +29,7 @@ class DateTimeEncoder(json.JSONEncoder):
 
     def default(self, o):
         if isinstance(o, datetime):
-            return o.isoformat()
+            return o.isoformat("T", "seconds")
 
         return json.JSONEncoder.default(self, o)
 
@@ -53,6 +54,16 @@ def encode_json(obj):
     :param obj:
     :return: JSON
     """
-    jsdata = json.dumps(skip_nulls_rec(obj), cls=DateTimeEncoder)
-
+    cleaned = skip_nulls_rec(obj)
+    # TODO make null safe
+    for profile in cleaned.get("properties").get("links").get("profiles"):
+        href = profile.get("href")
+        if href:
+            profile["href"] = genericspecurl_to_encodedspecurl(href, GEOJSON_OWCSPEC_URL)
+    # TODO make null safe
+    for feature in cleaned.get("features"):
+        for offering in feature.get("properties").get("offerings"):
+            code = offering.get("code")
+            offering["code"] = genericspecurl_to_encodedspecurl(code, GEOJSON_OWCSPEC_URL)
+    jsdata = json.dumps(cleaned, cls=DateTimeEncoder)
     return jsdata
